@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FIT5136 Assessment 2 — Progress Board</title>
+<style>
+  :root{
+    --ink:#16202B;
+    --ink-soft:#233241;
+    --paper:#F3F1EA;
+    --paper-dim:#E7E3D8;
+    --line:#C9C2B0;
+    --teal:#2D6A6A;
+    --teal-dim:#DCE9E7;
+    --amber:#C98A2B;
+    --green:#3E7B4F;
+    --yellow:#C98A2B;
+    --red:#B4453A;
+    --blue:#3A6EA5;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --serif: Georgia, "Iowan Old Style", Cambria, serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:14px;
+    line-height:1.5;
+  }
+  header{
+    background:var(--ink);
+    color:var(--paper);
+    padding:22px 28px 20px;
+    position:sticky;
+    top:0;
+    z-index:10;
+    border-bottom:3px solid var(--amber);
+  }
+  .header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-family:var(--serif);
+    font-size:22px;
+    margin:0 0 4px;
+    font-weight:normal;
+    letter-spacing:.2px;
+  }
+  .subtitle{
+    color:#AEB9C4;
+    font-size:12px;
+  }
+  .meta-row{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-top:10px;
+    font-size:12px;
+  }
+  .meta-row label{ color:#AEB9C4; margin-right:6px; }
+  .meta-row input[type=text]{
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed #4A5A69;
+    color:var(--paper);
+    font-family:var(--mono);
+    font-size:12px;
+    padding:2px 0;
+    width:150px;
+  }
+  .meta-row input[type=text]:focus{ outline:none; border-bottom-color:var(--amber); }
+  .countdown{
+    text-align:right;
+    min-width:180px;
+  }
+  .countdown .label{ color:#AEB9C4; font-size:11px; }
+  .countdown .clock{ font-family:var(--serif); font-size:20px; color:var(--amber); }
+
+  .progress-wrap{ margin-top:16px; }
+  .progress-track{
+    height:20px;
+    background:var(--ink-soft);
+    border:1px solid #3A4A59;
+    position:relative;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:repeating-linear-gradient(45deg, var(--amber), var(--amber) 10px, #DFA24A 10px, #DFA24A 20px);
+    transition:width .4s ease;
+  }
+  .progress-ticks{
+    display:flex;
+    justify-content:space-between;
+    font-size:10px;
+    color:#7E8C99;
+    margin-top:3px;
+  }
+  .progress-label{
+    font-size:12px;
+    margin-top:6px;
+    color:#D8CFBF;
+  }
+  .progress-label b{ color:var(--paper); font-family:var(--serif); font-size:15px; }
+
+  .status-summary{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    padding:4px 10px;
+    border-radius:2px;
+    font-size:11px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--ink-soft);
+    border:1px solid #3A4A59;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .dot.green{ background:var(--green); }
+  .dot.yellow{ background:var(--yellow); }
+  .dot.red{ background:var(--red); }
+  .dot.blue{ background:var(--blue); }
+
+  main{ max-width:860px; margin:0 auto; padding:24px 20px 60px; }
+
+  .save-indicator{
+    font-size:11px;
+    color:#7A8A94;
+    text-align:right;
+    margin-bottom:10px;
+    min-height:14px;
+  }
+
+  details.card{
+    background:#fff;
+    border:1px solid var(--line);
+    margin-bottom:12px;
+  }
+  details.card[open]{ border-color:var(--teal); }
+  summary{
+    list-style:none;
+    cursor:pointer;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  summary::-webkit-details-marker{ display:none; }
+  .card-title{
+    font-family:var(--serif);
+    font-size:16px;
+  }
+  .card-title .weight{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#8A8272;
+    margin-left:8px;
+  }
+  .card-right{ display:flex; align-items:center; gap:10px; }
+  .card-count{ font-size:11px; color:#8A8272; }
+  .caret{ transition:transform .2s; color:var(--teal); font-size:12px; }
+  details[open] .caret{ transform:rotate(90deg); }
+
+  select.status-select{
+    font-family:var(--mono);
+    font-size:11px;
+    padding:3px 6px;
+    border:1px solid var(--line);
+    background:#fff;
+  }
+  select.status-select.st-DONE{ background:#E7F2E9; border-color:var(--green); color:#25542F; }
+  select.status-select.st-REVIEW{ background:#F7ECD9; border-color:var(--yellow); color:#7A501A; }
+  select.status-select.st-TODO{ background:#F6E7E4; border-color:var(--red); color:#7A2E24; }
+  select.status-select.st-BLOCKED{ background:#E2EAF3; border-color:var(--blue); color:#254269; }
+
+  .card-body{ padding:0 16px 16px; border-top:1px solid var(--paper-dim); }
+  .fields-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    padding:12px 0 4px;
+  }
+  .field{ display:flex; flex-direction:column; gap:3px; flex:1 1 180px; }
+  .field label{ font-size:10px; color:#8A8272; }
+  .field input, .field textarea{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:5px 7px;
+    border:1px solid var(--line);
+    background:var(--paper);
+  }
+  .field textarea{ resize:vertical; min-height:44px; }
+
+  .group{ margin-top:10px; }
+  .group-heading{
+    font-size:11px;
+    text-transform:none;
+    color:var(--teal);
+    border-bottom:1px solid var(--teal-dim);
+    padding-bottom:4px;
+    margin-bottom:6px;
+  }
+  ul.checklist{ list-style:none; margin:0; padding:0; }
+  ul.checklist li{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding:5px 0;
+    border-bottom:1px solid #F0EEE6;
+  }
+  ul.checklist li:last-child{ border-bottom:none; }
+  ul.checklist input[type=checkbox]{
+    margin-top:2px;
+    width:15px;
+    height:15px;
+    accent-color:var(--teal);
+    flex-shrink:0;
+  }
+  ul.checklist label{ cursor:pointer; }
+  ul.checklist li.checked label{ color:#8A8272; text-decoration:line-through; text-decoration-color:#C9C2B0; }
+
+  .final-card{ background:var(--ink); color:var(--paper); border:none; }
+  .final-card .card-title{ color:var(--paper); }
+  .final-card .card-body{ border-top-color:#3A4A59; }
+  .final-card .field label{ color:#AEB9C4; }
+  .final-card .field input, .final-card .field textarea{
+    background:var(--ink-soft); color:var(--paper); border-color:#3A4A59;
+  }
+  .final-card ul.checklist li{ border-bottom-color:#2A3A49; }
+  .final-card ul.checklist li.checked label{ color:#7E8C99; text-decoration-color:#4A5A69; }
+
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:#8A8272;
+    padding:20px 0 40px;
+  }
+  .reset-btn{
+    font-family:var(--mono);
+    font-size:11px;
+    background:none;
+    border:1px solid var(--red);
+    color:var(--red);
+    padding:5px 10px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .reset-btn:hover{ background:#F6E7E4; }
+  .share-note{ font-size:11px; color:#7E8C99; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <h1>FIT5136 — Assessment 2 Progress Board</h1>
+      <div class="subtitle">System Design and Design Artefacts · Weight 15%</div>
+      <div class="meta-row">
+        <span><label>Team</label><input type="text" id="teamName" placeholder="team name"></span>
+        <span><label>Repo</label><input type="text" id="repoName" placeholder="gitlab url"></span>
+      </div>
+    </div>
+    <div class="countdown">
+      <div class="label">Due 14 Sep 2026, 23:55</div>
+      <div class="clock" id="clock">—</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+    <div class="progress-label"><b id="progressPct">0%</b> of all checklist items complete (<span id="progressCount">0 / 0</span>)</div>
+  </div>
+
+  <div class="status-summary" id="statusSummary"></div>
+</header>
+
+<main>
+  <div class="save-indicator" id="saveIndicator">&nbsp;</div>
+  <div id="sections"></div>
+</main>
+
+<footer>
+  Shared live board — everyone who opens this artifact sees and edits the same state.
+  <br><button class="reset-btn" id="resetBtn">Reset all progress</button>
+</footer>
+
+<script>
+const STATUS_ORDER = ["TODO","REVIEW","DONE","BLOCKED"];
+const STATUS_LABEL = { DONE:"🟢 DONE", REVIEW:"🟡 REVIEW", TODO:"🔴 TODO", BLOCKED:"🔵 BLOCKED" };
+
+const SECTIONS = [
+  {
+    id:"class-diagram", title:"1. Class Diagram", weight:"6%",
+    fields:[{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"},{key:"diagram",label:"Diagram location"}],
+    groups:[{items:[
+      "Core classes/abstractions identified from Assessment 1",
+      "Meaningful class/entity names",
+      "Responsibilities correctly allocated",
+      "Key attributes included",
+      "Data types correct",
+      "Visibility included where relevant",
+      "Methods/operations included",
+      "Method signatures correct",
+      "Parameters correct",
+      "Return types correct",
+      "Relationships correctly modelled",
+      "Multiplicities included",
+      "Navigability considered",
+      "Ownership/composition considered where applicable",
+      "UML notation consistent",
+      "Consistent with Assessment 1 scope",
+      "Consistent with architecture",
+      "Consistent with DESIGN.md"
+    ]}]
+  },
+  {
+    id:"dictionary", title:"2. Dictionary of Abstractions",
+    fields:[{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"},{key:"location",label:"Location"}],
+    groups:[{items:[
+      "Every important abstraction is included",
+      "Each abstraction has a clear purpose",
+      "Responsibilities are explained",
+      "Relationship to the domain is explained",
+      "Terminology matches the class diagram",
+      "No important abstraction is missing",
+      "Dictionary does more than simply repeat the diagram",
+      "Potential ambiguity is resolved"
+    ]}]
+  },
+  {
+    id:"use-case-diagram", title:"3. Use Case Diagram", weight:"4%",
+    fields:[{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"},{key:"diagram",label:"Diagram location"}],
+    groups:[{items:[
+      "Significant actors identified",
+      "Core use cases identified",
+      "System boundary clearly defined",
+      "Actor relationships correct",
+      "include / extend relationships correct where appropriate",
+      "No unnecessary/overlapping use cases",
+      "Consistent with Assessment 1",
+      "Scope is clearly communicated"
+    ]}]
+  },
+  {
+    id:"scenario-1", title:"3a. Use-Case Scenario 1",
+    fields:[{key:"usecase",label:"Use case"},{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"}],
+    groups:[{items:[
+      "Trigger","Preconditions","Main success flow","Alternative flow","Error flow",
+      "Postconditions","Linked requirement/user story","Linked acceptance criteria",
+      "Consistent with use case diagram","Edge cases considered"
+    ]}]
+  },
+  {
+    id:"scenario-2", title:"3b. Use-Case Scenario 2",
+    fields:[{key:"usecase",label:"Use case"},{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"}],
+    groups:[{items:[
+      "Trigger","Preconditions","Main success flow","Alternative flow","Error flow",
+      "Postconditions","Linked requirement/user story","Linked acceptance criteria",
+      "Consistent with use case diagram","Edge cases considered"
+    ]}]
+  },
+  {
+    id:"sequence-diagram", title:"4. Sequence Diagram", weight:"5%",
+    fields:[{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"},{key:"diagram",label:"Diagram location"}],
+    groups:[{items:[
+      "Important end-to-end behaviour selected","Actor included",
+      "Relevant components/classes included","Participants correctly identified",
+      "Lifelines correct","Messages correctly named","Message order correct",
+      "Key validations included","Alternate behaviour included","Error handling included",
+      "Conditions/loops included where relevant","Consistent with class diagram",
+      "Consistent with architecture","Consistent with requirements"
+    ]}]
+  },
+  {
+    id:"code-explanation", title:"4a. Code Explanation",
+    fields:[{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"},{key:"location",label:"Location"}],
+    groups:[{items:[
+      "Explains how the sequence translates into code",
+      "Identifies relevant classes/modules/components",
+      "Explains responsibilities",
+      "Explains collaboration between components",
+      "Does not simply restate the sequence diagram",
+      "Is implementation-ready",
+      "Does not require a developer/coding agent to invent core behaviour"
+    ]}]
+  },
+  {
+    id:"design-md", title:"5. docs/DESIGN.md", weight:"compulsory, ≤600 words",
+    fields:[{key:"wordcount",label:"Word count"},{key:"owner",label:"Owner"},{key:"reviewer",label:"Reviewer"}],
+    groups:[{items:[
+      "Design goal","Assessment 1 requirements addressed","Relevant user stories identified",
+      "Relevant acceptance criteria identified","Architectural/structural decisions explained",
+      "Principal abstractions explained","Responsibilities explained","Relationships explained",
+      "Runtime interactions explained","Validations explained","Alternate/error behaviour explained",
+      "Assumptions identified","Constraints identified","Trade-offs identified",
+      "Pending TA/client decisions identified, if applicable","Diagrams linked/embedded",
+      "Use-case scenarios referenced","Describes design decisions rather than repeating diagrams",
+      "Consistent with repository","Consistent with Assessment 1","File is exactly docs/DESIGN.md",
+      "Word count ≤ 600"
+    ]}]
+  },
+  {
+    id:"gitlab", title:"6. GitLab Repository",
+    fields:[{key:"repo",label:"Repository"}],
+    groups:[{items:[
+      "docs/DESIGN.md committed","Class diagram source committed","Use case diagram source committed",
+      "Sequence diagram source committed","Dictionary committed","Exported diagrams committed",
+      "PDF/PNG/SVG versions readable","Links work","Final version committed",
+      "Team contributions visible through commits/issues/comments","Team members can explain their contributions"
+    ]}]
+  },
+  {
+    id:"ai-usage", title:"7. AI Usage & Academic Integrity",
+    fields:[{key:"aifile",label:"AI file"}],
+    groups:[{items:[
+      "AI use documented responsibly","AI usage report prepared","AI contribution acknowledged",
+      "docs/FoundationModelsUsed created","Accepted format used: .txt, .pdf, or Word",
+      "AI-generated content reviewed by the team","Final design represents the team's own analysis and judgement",
+      "Every team member understands the submitted work",
+      "No copied human-authored work submitted without acknowledgement","No fabricated evidence"
+    ]}]
+  },
+  {
+    id:"moodle-zip", title:"8. Final Moodle ZIP",
+    fields:[{key:"zip",label:"ZIP filename"}],
+    groups:[{items:[
+      "Final ZIP created","Required material included","ZIP opens correctly","Final versions included",
+      "GitLab updated before submission","Correct ZIP uploaded","Uploaded ZIP checked",
+      "Submit button clicked","Submission shows Submitted/Complete","Submission is NOT left as Draft"
+    ]}]
+  },
+  {
+    id:"final-review", title:"9. Cross-Artefact Consistency & HD Readiness",
+    fields:[{key:"reviewer",label:"Reviewer"}],
+    groups:[
+      {heading:"Requirements → Use Cases", items:["Major approved requirements are represented","Use cases match approved scope","Terminology matches Assessment 1"]},
+      {heading:"Requirements → Classes", items:["Important domain concepts appear in the class model","Classes have clear justification","No unnecessary classes"]},
+      {heading:"Use Cases → Sequence", items:["Sequence represents an actual important behaviour","Scenario and sequence use consistent terminology","Alternative/error flows match"]},
+      {heading:"Classes → Sequence", items:["Sequence participants match classes/components","Messages match class responsibilities","Called operations are consistent with class methods"]},
+      {heading:"DESIGN.md → Diagrams", items:["Design decisions are reflected in diagrams","No contradictions","Assumptions/trade-offs are consistent"]},
+      {heading:"HD — Use Case Diagram & Scenarios", items:[
+        "All significant actors and use cases are correctly scoped","System boundary clearly communicates scope",
+        "Relationships are accurate and purposeful","Both scenarios are complete",
+        "Scenarios include meaningful alternative/error handling",
+        "Scenarios are traceable to approved requirements and acceptance criteria",
+        "Edge conditions expose relevant design implications"
+      ]},
+      {heading:"HD — Class Diagram", items:[
+        "Model is complete and precise","Responsibilities are deliberately allocated",
+        "Abstractions are significant and meaningful","Attributes, types and visibility are accurate",
+        "Methods, parameters and return types are accurate","Relationships and multiplicities are accurate",
+        "Navigability is correct where relevant","Ownership/composition decisions are deliberate",
+        "Dictionary is concise and authoritative","Reader can implement the model without inventing core behaviour"
+      ]},
+      {heading:"HD — Sequence Diagram & Code Explanation", items:[
+        "Interaction is important and end-to-end","Participants, messages and ordering are accurate",
+        "Lifelines are correct","Validations are visible","Alternate/error paths are meaningful",
+        "Diagram is consistent with class model, architecture and requirements",
+        "Code explanation clearly allocates responsibilities","Behaviour is implementation-ready"
+      ]}
+    ]
+  }
+];
+
+const FINAL_SECTION = {
+  id:"final-submission", title:"🏁 Final Submission Status",
+  fields:[{key:"finalreviewer",label:"Final reviewer"},{key:"finaldate",label:"Date"},{key:"comments",label:"Team comments",type:"textarea"}],
+  groups:[{items:[
+    "All required artefacts complete","All artefacts reviewed","Cross-consistency checked",
+    "GitLab final version committed","AI usage documented","ZIP prepared","Moodle checked","SUBMITTED"
+  ]}]
+};
+
+const ALL_SECTIONS = [...SECTIONS, FINAL_SECTION];
+
+let state = { items:{}, status:{}, fields:{} };
+let saveTimer = null;
+
+function itemKey(sectionId, groupIdx, itemIdx){ return sectionId + ":" + groupIdx + ":" + itemIdx; }
+
+function countTotals(){
+  let total = 0, done = 0;
+  ALL_SECTIONS.forEach(sec => sec.groups.forEach((g, gi) => g.items.forEach((it, ii) => {
+    total++;
+    if(state.items[itemKey(sec.id, gi, ii)]) done++;
+  })));
+  return {total, done};
+}
+
+function sectionCounts(sec){
+  let total = 0, done = 0;
+  sec.groups.forEach((g, gi) => g.items.forEach((it, ii) => {
+    total++;
+    if(state.items[itemKey(sec.id, gi, ii)]) done++;
+  }));
+  return {total, done};
+}
+
+function renderStatusSummary(){
+  const counts = { DONE:0, REVIEW:0, TODO:0, BLOCKED:0 };
+  SECTIONS.forEach(sec => {
+    const s = state.status[sec.id] || "TODO";
+    counts[s] = (counts[s]||0) + 1;
+  });
+  const wrap = document.getElementById("statusSummary");
+  wrap.innerHTML = `
+    <span class="pill"><span class="dot green"></span>${counts.DONE} done</span>
+    <span class="pill"><span class="dot yellow"></span>${counts.REVIEW} in review</span>
+    <span class="pill"><span class="dot red"></span>${counts.TODO} to do</span>
+    <span class="pill"><span class="dot blue"></span>${counts.BLOCKED} blocked</span>
+  `;
+}
+
+function renderProgress(){
+  const {total, done} = countTotals();
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+  document.getElementById("progressCount").textContent = done + " / " + total;
+}
+
+function fieldValue(sec, key){
+  return (state.fields[sec.id] && state.fields[sec.id][key]) || "";
+}
+
+function renderSection(sec, isFinal){
+  const {total, done} = sectionCounts(sec);
+  const card = document.createElement("details");
+  card.className = "card" + (isFinal ? " final-card" : "");
+  card.open = false;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = `
+    <div>
+      <span class="caret">▶</span>
+      <span class="card-title">${sec.title}${sec.weight ? `<span class="weight">${sec.weight}</span>` : ""}</span>
+    </div>
+    <div class="card-right">
+      <span class="card-count">${done}/${total}</span>
+      ${!isFinal ? `<select class="status-select st-${state.status[sec.id]||'TODO'}" data-sec="${sec.id}">
+        ${STATUS_ORDER.map(s => `<option value="${s}" ${((state.status[sec.id]||'TODO')===s)?'selected':''}>${STATUS_LABEL[s]}</option>`).join("")}
+      </select>` : ""}
+    </div>
+  `;
+  card.appendChild(summary);
+
+  const body = document.createElement("div");
+  body.className = "card-body";
+
+  if(sec.fields && sec.fields.length){
+    const row = document.createElement("div");
+    row.className = "fields-row";
+    sec.fields.forEach(f => {
+      const wrap = document.createElement("div");
+      wrap.className = "field";
+      const tag = f.type === "textarea" ? "textarea" : "input";
+      wrap.innerHTML = `<label>${f.label}</label><${tag} ${tag==='input'?'type="text"':''} data-sec="${sec.id}" data-field="${f.key}">${tag==='textarea'?fieldValue(sec,f.key):''}</${tag}>`;
+      row.appendChild(wrap);
+      if(tag === "input"){
+        wrap.querySelector("input").value = fieldValue(sec, f.key);
+      }
+    });
+    body.appendChild(row);
+  }
+
+  sec.groups.forEach((g, gi) => {
+    const groupWrap = document.createElement("div");
+    groupWrap.className = "group";
+    if(g.heading){
+      const h = document.createElement("div");
+      h.className = "group-heading";
+      h.textContent = g.heading;
+      groupWrap.appendChild(h);
+    }
+    const ul = document.createElement("ul");
+    ul.className = "checklist";
+    g.items.forEach((text, ii) => {
+      const key = itemKey(sec.id, gi, ii);
+      const checked = !!state.items[key];
+      const li = document.createElement("li");
+      if(checked) li.classList.add("checked");
+      const cid = "chk-" + key.replace(/[^a-zA-Z0-9]/g, "-");
+      li.innerHTML = `<input type="checkbox" id="${cid}" data-key="${key}" ${checked?'checked':''}>
+        <label for="${cid}">${text}</label>`;
+      ul.appendChild(li);
+    });
+    groupWrap.appendChild(ul);
+    body.appendChild(groupWrap);
+  });
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderAll(){
+  const container = document.getElementById("sections");
+  container.innerHTML = "";
+  SECTIONS.forEach(sec => container.appendChild(renderSection(sec, false)));
+  container.appendChild(renderSection(FINAL_SECTION, true));
+  renderProgress();
+  renderStatusSummary();
+  attachHandlers();
+}
+
+function attachHandlers(){
+  document.querySelectorAll('ul.checklist input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      state.items[e.target.dataset.key] = e.target.checked;
+      e.target.closest('li').classList.toggle('checked', e.target.checked);
+      renderProgress();
+      updateSectionCount(e.target.closest('.card'));
+      saveState();
+    });
+  });
+  document.querySelectorAll('select.status-select').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const secId = e.target.dataset.sec;
+      state.status[secId] = e.target.value;
+      e.target.className = 'status-select st-' + e.target.value;
+      renderStatusSummary();
+      saveState();
+    });
+  });
+  document.querySelectorAll('.fields-row input, .fields-row textarea').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const secId = e.target.dataset.sec, field = e.target.dataset.field;
+      if(!state.fields[secId]) state.fields[secId] = {};
+      state.fields[secId][field] = e.target.value;
+      saveState();
+    });
+  });
+}
+
+function updateSectionCount(card){
+  if(!card) return;
+  const secId = card.querySelector('[data-sec]')?.dataset.sec;
+  const sec = ALL_SECTIONS.find(s => s.id === secId);
+  if(!sec) return;
+  const {total, done} = sectionCounts(sec);
+  card.querySelector('.card-count').textContent = `${done}/${total}`;
+}
+
+// --- JSONBin backend ---
+// This board is hosted externally, so it talks to a small hosted JSON store
+// (JSONBin) instead of Claude's internal storage. The Access Key below is
+// scoped to read/update this one bin only.
+const JSONBIN_BIN_ID = "6aa6181dffd5d1605300341c";
+const JSONBIN_ACCESS_KEY = "6aa61864ffd5d1605300349d";
+const JSONBIN_BASE = "https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID;
+
+let lastKnownRemote = null; // used to avoid clobbering newer teammate edits
+
+async function fetchRemote(){
+  const res = await fetch(JSONBIN_BASE + "/latest", {
+    headers: { "X-Access-Key": JSONBIN_ACCESS_KEY }
+  });
+  if(!res.ok) throw new Error("JSONBin GET failed: " + res.status);
+  const data = await res.json();
+  return data.record || {};
+}
+
+async function pushRemote(record){
+  const res = await fetch(JSONBIN_BASE, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Access-Key": JSONBIN_ACCESS_KEY
+    },
+    body: JSON.stringify(record)
+  });
+  if(!res.ok) throw new Error("JSONBin PUT failed: " + res.status);
+  return res.json();
+}
+
+async function saveState(){
+  const indicator = document.getElementById("saveIndicator");
+  indicator.textContent = "saving…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try{
+      const record = {
+        items: state.items,
+        status: state.status,
+        fields: state.fields,
+        meta: {
+          teamName: document.getElementById('teamName').value,
+          repoName: document.getElementById('repoName').value
+        }
+      };
+      await pushRemote(record);
+      lastKnownRemote = record;
+      indicator.textContent = "saved · shared with your team";
+    }catch(err){
+      indicator.textContent = "save failed — check your connection and try again";
+      console.error(err);
+    }
+  }, 500);
+}
+
+async function loadState(){
+  try{
+    const record = await fetchRemote();
+    lastKnownRemote = record;
+    state.items = record.items || {};
+    state.status = record.status || {};
+    state.fields = record.fields || {};
+    const meta = record.meta || {};
+    document.getElementById('teamName').value = meta.teamName || '';
+    document.getElementById('repoName').value = meta.repoName || '';
+  }catch(err){
+    console.log('No saved state yet, or bin unreachable — starting fresh.', err);
+    document.getElementById("saveIndicator").textContent = "couldn't reach shared storage — showing a blank board";
+  }
+}
+
+async function saveMeta(){
+  saveState();
+}
+
+document.getElementById('teamName').addEventListener('input', saveMeta);
+document.getElementById('repoName').addEventListener('input', saveMeta);
+
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if(!confirm('Reset all checkboxes and statuses for the whole team? This cannot be undone.')) return;
+  state = { items:{}, status:{}, fields:{} };
+  await saveState();
+  renderAll();
+});
+
+// Poll for teammate updates every 15s so the board feels live without a refresh
+setInterval(async () => {
+  try{
+    const record = await fetchRemote();
+    if(JSON.stringify(record) !== JSON.stringify(lastKnownRemote)){
+      lastKnownRemote = record;
+      state.items = record.items || {};
+      state.status = record.status || {};
+      state.fields = record.fields || {};
+      const meta = record.meta || {};
+      document.getElementById('teamName').value = meta.teamName || '';
+      document.getElementById('repoName').value = meta.repoName || '';
+      renderAll();
+    }
+  }catch(err){ /* stay silent on transient poll failures */ }
+}, 15000);
+
+function updateClock(){
+  const due = new Date('2026-09-14T23:55:00');
+  const now = new Date();
+  const diff = due - now;
+  const el = document.getElementById('clock');
+  if(diff <= 0){ el.textContent = "Due date passed"; return; }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  el.textContent = `${h}h ${m}m left`;
+}
+
+(async function init(){
+  await loadState();
+  renderAll();
+  updateClock();
+  setInterval(updateClock, 30000);
+})();
+</script>
+</body>
+</html>
